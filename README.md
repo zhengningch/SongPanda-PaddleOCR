@@ -63,41 +63,9 @@
 
 该实验也证明了，模型在训练融合了噪音的数据之后，表现更加稳定——从鲁棒性来看，Mix 训练得到的模型得分高于 Pure。
 
-基于以上验证，本项目将 Mix 策略迁移至比赛主线，**以 PaddleOCR-VL-1.5 为基座、基于 Mix 合成数据进行全参微调**，得到最终发布模型 **SongPanda**（HuggingFace: [`zhengningch/SongPanda2.0`](https://huggingface.co/zhengningch/SongPanda2.0)）。
+基于以上验证，本项目将 Mix 策略迁移至比赛主线，**以 PaddleOCR-VL-1.5 为基座、基于 Mix 合成数据进行全参微调**，得到最终发布模型 **SongPanda**（HuggingFace: [`ningzhuo/SongPanda2.0`](https://huggingface.co/ningzhuo/SongPanda2.0)）。
 
 ---
-## 仓库结构
-
-```
-SongPanda-PaddleOCR/
-├── README.md                           # 本文档
-├── LICENSE                             # Apache-2.0
-├── requirements.txt                    # 顶层 Python 依赖（demo + eval）
-├── .gitignore
-│
-├── docs/
-│   ├── training_data_report.md         # 训练数据构建报告
-│   ├── songpanda_bench.md              # 评估集说明 + 任务描述│
-├── train/                              # 训练相关
-│   ├── README.md                       # 训练流程说明（含 vRain 合成数据说明）
-│   ├── requirements.txt                # 训练环境依赖（PaddleFormers）
-│   ├── finetune_paddleocrvl.yaml       # PaddleOCR-VL-1.5 全参微调配置
-│   └── prepare_dataset.py              # vRain 输出 → PaddleFormers 训练格式
-│
-├── demo/
-│   └── demo.py                         # 单脚本推理示例（PaddleFormers 原生）
-│
-└── eval/
-    ├── groundtruth.csv                 # 356 条标注（index, answer）
-    ├── bench集分布.xlsx                 # 数据分布统计（四部分类 + 朝代）
-    ├── dataset_infos.json              # AI Studio 数据集 schema
-    ├── requirements.txt                # 评测环境依赖
-    ├── README.md                       # 评测使用说明
-    ├── README_dataset.md               # 评估集数据集主页说明
-    └── src/
-        ├── ocr_infer.py                # 批量推理脚本（OpenAI / HF 后端）
-        └── evaluate_ocr.py             # 评测脚本（NED + NER_F1 + 鲁棒性）
-```
 
 > **关于评估集 356 张图像**：由于单张 JPG 体积较大（约 200MB+），GitHub 仓库**不直接收录**评估集图像文件，请从 AI Studio 数据集下载：guji/songpanda-bench。`eval/groundtruth.csv` 与 `eval/bench集分布.xlsx` 为标注与统计，仍保留在本仓库。
 >
