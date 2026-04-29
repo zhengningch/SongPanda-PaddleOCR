@@ -1,0 +1,20 @@
+{
+  "default": {
+    "features": {
+      "index": {
+        "_type": "Value"
+      },
+      "image": {
+        "_type": "Image"
+      },
+      "answer": {
+        "_type": "Value"
+      }
+    },
+    "splits": {
+      "test": {
+        "path": "data/groundtruth.csv"
+      }
+    }
+  }
+}

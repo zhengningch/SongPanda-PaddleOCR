@@ -1,0 +1,22 @@
+# SongPanda 训练环境依赖（路线 A：PaddleOCR-VL-1.5 + PaddleFormers）
+# 建议：Python 3.10+，CUDA 12.x
+
+# ---------- PaddlePaddle 深度学习框架 ----------
+# GPU 版本，若 CUDA 版本不同请参考 https://www.paddlepaddle.org.cn/install/quick
+paddlepaddle-gpu>=3.0.0
+
+# ---------- PaddleFormers 训练框架 ----------
+paddleformers>=0.1.0
+
+# ---------- 通用依赖 ----------
+numpy
+pillow
+tqdm
+pyyaml
+regex
+sentencepiece
+tiktoken
+huggingface_hub  # 用于权重下载与上传
+
+# ---------- 可视化（可选） ----------
+visualdl

@@ -1,0 +1,13 @@
+# SongPanda 顶层依赖（用于 demo 推理 + 评测）
+# 训练环境依赖请见 train/requirements.txt
+# 评测环境依赖请见 eval/requirements.txt
+
+# ---------- 推理后端（PaddleFormers 原生） ----------
+paddlepaddle-gpu>=3.0.0
+paddleformers>=0.1.0
+
+# ---------- 通用 ----------
+pillow
+tqdm
+pyyaml
+numpy
