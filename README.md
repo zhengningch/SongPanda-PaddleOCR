@@ -68,8 +68,6 @@
 ---
 
 > **关于评估集 356 张图像**：由于单张 JPG 体积较大（约 200MB+），GitHub 仓库**不直接收录**评估集图像文件，请从 AI Studio 数据集下载：guji/songpanda-bench。`eval/groundtruth.csv` 与 `eval/bench集分布.xlsx` 为标注与统计，仍保留在本仓库。
->
-> **关于训练合成工具 vRain**：合成数据基于开源 Perl 项目 [vRain（兀雨书屋）](https://github.com/vrain-script/vrain) 生成，本仓库**不内嵌其源码**（请前往上游仓库获取）。本项目对应的**字体选择、画布配置、文本切分规则**见 [`train/README.md`](./train/README.md) 中的「合成数据配置」一节。
 
 ---
 
