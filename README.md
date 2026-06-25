@@ -5,7 +5,7 @@
 | | 链接 |
 |---|---|
 | 🤗 模型 | [Hugging Face](https://huggingface.co/ningzhuo/SongPanda2.1) |
-| 🧪 Demo | [Hugging Face Spaces](https://huggingface.co/spaces/ningzhuo/SongPanda2.1) / [ModelScope](https://www.modelscope.cn/studios/zhuoning/paddleocr-vl-cpu-demo) |
+| 🧪 Demo | [ModelScope](https://www.modelscope.cn/studios/zhuoning/paddleocr-vl-cpu-demo) |
 ---
 
 ## 背景 & 摘要
