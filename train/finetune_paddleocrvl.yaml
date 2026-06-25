@@ -1,0 +1,50 @@
+# ============================================================
+# SongPanda 训练配置：PaddleOCR-VL-1.5 全参微调
+# 参考：https://aistudio.baidu.com/projectdetail/10127933
+# 硬件：1 × NVIDIA RTX 4090 48GB
+# 实际训练时长：约 8 小时 / 2 epoch / Mix 集（约 2w 张）
+# ============================================================
+
+### ========== 模型与路径 ==========
+model_name_or_path: PaddlePaddle/PaddleOCR-VL-1.5  # 基座模型（HF 或本地路径）
+output_dir: ./output/all_full_epoch2                # 训练权重输出目录
+
+### ========== 数据 ==========
+# 训练数据：prepare_dataset.py 生成的 JSONL（每行 {image, conversations}）
+train_dataset_path: ./data/train.jsonl
+eval_dataset_path: null                             # 未使用内部 eval，评测统一走 eval/src/evaluate_ocr.py
+max_seq_length: 4096                                # 古籍单页字符上限，留足余量
+image_max_pixels: 1605632                           # 约 1280×1280，适配古籍书影
+
+### ========== 训练策略 ==========
+do_train: true
+do_eval: false
+fine_tune_type: full                                # 全参微调（非 LoRA）
+stage: sft                                          # Supervised Fine-Tuning
+
+### ========== 超参数 ==========
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8                      # 等效 batch size = 8
+num_train_epochs: 2
+learning_rate: 1.0e-5
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+max_grad_norm: 1.0
+
+### ========== 精度与显存优化 ==========
+bf16: true                                          # 4090 支持 bf16
+gradient_checkpointing: true                        # 48GB 显存必开
+use_flash_attention: true
+
+### ========== 日志与保存 ==========
+logging_steps: 20
+save_strategy: steps
+save_steps: 1000
+save_total_limit: 3                                 # 最多保留 3 个中间 checkpoint
+report_to: visualdl                                 # PaddleFormers 原生可视化
+
+### ========== 其他 ==========
+seed: 42
+dataloader_num_workers: 4
+remove_unused_columns: false                        # 多模态必须为 false
