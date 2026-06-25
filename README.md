@@ -4,7 +4,7 @@
 
 | | 链接 |
 |---|---|
-| 🤗 模型 | [Hugging Face](https://huggingface.co/ningzhuo/SongPanda2.1) | [ModelScope](https://www.modelscope.cn/models/zhuoning/paddleocr-vl-1.6-full-epoch3) |
+| 🤗 模型 | [Hugging Face](https://huggingface.co/ningzhuo/SongPanda2.1) [ModelScope](https://www.modelscope.cn/models/zhuoning/paddleocr-vl-1.6-full-epoch3) |
 | 🧪 Demo | [ModelScope](https://www.modelscope.cn/studios/zhuoning/paddleocr-vl-cpu-demo) |
 ---
 
