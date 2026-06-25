@@ -14,8 +14,6 @@
 
 基于此，本项目提出了一种合成古籍图像数据的方法，提供了一个 20000 余张古籍图像的训练集，大大降低了古籍垂直领域数据标注的成本。不仅如此，本项目还结合古籍版本学知识，精心构建了一个覆盖宋代以来重要刻本、兼顾域外刻本，共来源 100 余本古籍、356 张图像的测试集，并且设计了适用于复杂版面古籍文档识别的评测方法，命名为 **SongPanda-Bench**。实验利用小规模对比实验，证明合成数据拥有与真实数据相近似的效能。最后，基于合成数据，以 **PaddleOCR-VL-1.6 全参微调**得到 **SongPanda 2.1**，在 SongPanda-Bench 上较基座提升 +15 分。
 
-![SongPanda vs 通用大模型效果对比](docs/figures/songpanda_vs_doubao_demo.png)
-
 > 面对一张带版心、双行小字夹注的清刻本书影，通用视觉大模型（如 doubao）会把版心的卷次信息误识为正文，而 **SongPanda** 能准确去除版心、识别正文、并以 `<footnote>` 标签还原双行小字夹注的阅读顺序。
 
 ---
@@ -77,7 +75,6 @@
 - **GitHub**：<https://github.com/chenruizheng/SongPanda-PaddleOCR>
 - **Hugging Face 模型**：<https://huggingface.co/ningzhuo/SongPanda2.1>
 - **ModelScope Demo**：<https://www.modelscope.cn/studios/zhuoning/paddleocr-vl-cpu-demo>
-- **AI Studio 数据集**：<https://aistudio.baidu.com/datasetdetail/guji/songpanda-bench>
 
 ---
 
