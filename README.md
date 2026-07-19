@@ -121,17 +121,6 @@ github/
 
 - 感谢"全球汉籍影像开放集成系统"提供真实古籍书影
 - 感谢 [vRain](https://github.com/shanleiguang/vRain)、[daizhige](https://github.com/up2hub/daizhige) 等开源项目
-- 标注团队：段伟（上海师大）、阳思彤（华东师大）、沈晨（武汉大学）；总仲裁：郑陈锐（中山大学）
 
-## 📜 引用
-
-```bibtex
-@misc{songpanda2025,
-  title  = {SongPanda: A VLM for Chinese Classical Book OCR with Field Discrimination},
-  author = {SongPanda Team},
-  year   = {2025},
-  url    = {https://zhengningch.github.io/SongPanda-PaddleOCR/}
-}
-```
 
 许可证：Apache-2.0
