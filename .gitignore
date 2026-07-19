@@ -1,0 +1,17 @@
+
+.DS_Store
+node_modules/
+*.pyc
+__pycache__/
+*.swp
+*.swo
+*.log
+*.tmp
+*.vscode/
+.idea/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+*.ipynb_checkpoints

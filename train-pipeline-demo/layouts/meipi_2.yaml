@@ -1,0 +1,83 @@
+# ── 版式配置：meipi_2 ──
+canvas_id:                meipi_2
+canvas_width:             1200
+canvas_height:            896
+
+margins_top:              126
+margins_bottom:           101
+margins_left:             198
+margins_right:            193
+
+col_num:                  12
+leaf_center_width:        42
+outline_width:            10
+outline_vmargin:          5
+
+row_num:                  12           # 每列字数
+
+spine_title:          ""
+title_postfix:        ""
+
+if_tpcenter:              1
+title_font_size:          80
+title_font_color:         black
+title_y:                  1200
+title_ydis:               1.2
+
+pager_font_size:          35
+pager_font_color:         black
+pager_y:                  500
+
+# ── 字体 ──
+font1:                "汇文明朝体.ttf"
+font2:                "HanaMinA.ttf"
+font3:                "HanaMinB.ttf"
+
+text_fonts_array:     "123"
+comment_fonts_array:  "23"
+
+text_font1_size:          50
+text_font2_size:          35
+text_font3_size:          35
+text_font_color:          black
+
+comment_font1_size:       25
+comment_font2_size:       25
+comment_font3_size:       25
+comment_font_color:       black
+
+# ── 标点规则 ──
+exp_replace_comma:    ""
+exp_replace_number:   "1一|2二|3三|4四|5五|6六|7七|8八|9九|0〇"
+exp_delete_comma:     "．|　"
+if_nocomma:               0
+if_onlyperiod:            1
+exp_onlyperiod:       "、|，|。|：|；|！|？|〔|〕|「|」|『|』"
+onlyperiod_color:         "#1b1918"
+text_comma_nop:       "、|，|。|：|；|！|？"
+text_comma_nop_size:      1.2
+text_comma_nop_x:         0.5
+text_comma_nop_y:         0.2
+text_comma_90:        "「」『』〔〕…"
+text_comma_90_size:       0.8
+text_comma_90_x:          0.35
+text_comma_90_y:          0.6
+comment_comma_nop:    "、|，|。|：|；|！|？"
+comment_comma_nop_size:   0.7
+comment_comma_nop_x:      0.8
+comment_comma_nop_y:      0.1
+comment_comma_90:     "「」『』〔〕…"
+comment_comma_90_size:    0.8
+comment_comma_90_x:       0.15
+comment_comma_90_y:       0.5
+
+# ── 书名竖线 ──
+if_book_vline:            1
+book_line_width:          1
+book_line_color:          black
+topcmt_color:             "black"
+
+# ── 列框标注（由图片标注工具生成）──
+col_positions:            942,880,816,755,690,630,511,452,390,328,264,195
+col_widths:               65,63,64,60,59,61,72,61,63,63,65,67
+fish_position:            top

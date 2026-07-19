@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>眉批 &amp; 圈点 OCR 校勘</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: linear-gradient(180deg,#f6f8fc,#f1f4fa); min-height:100vh; }
+button { border:1px solid #d4dded; background:#fff; border-radius:10px; padding:8px 14px; font-weight:600; cursor:pointer; transition:background .15s ease,border-color .15s ease; font-size:13px; }
+button:hover { border-color:#94b6ff; }
+.primary-btn { background:#1f5eff; color:#fff; border:none; }
+.ghost-btn { border:1px solid #d9e2f3; background:#f8fbff; color:#334a73; }
+
+.panel { width:min(1480px,calc(100vw - 40px)); margin:20px auto; background:rgba(255,255,255,.95); border-radius:18px; padding:18px 20px; box-shadow:0 10px 30px rgba(18,25,38,.08); }
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.toolbar h2 { margin:0; font-size:20px; }
+.toolbar-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+/* Main layout: 更紧凑的侧栏 */
+.main-layout { display:grid; grid-template-columns:150px 1fr; gap:14px; margin-top:14px; height:calc(100vh - 120px); min-height:540px; }
+.sidebar { border:1px solid #d9e0ea; border-radius:12px; background:#fff; padding:6px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+.sidebar-item { border:1px solid #e3ebf5; border-radius:8px; background:#fff; text-align:left; padding:6px 10px; cursor:pointer; font-size:13px; font-weight:600; color:#334a73; }
+.sidebar-item:hover { border-color:#b8c7e0; }
+.sidebar-item.active { border-color:#1f5eff; background:#f0f5ff; color:#1f3a6a; }
+
+/* Proofread layout */
+.proofread-layout { display:grid; grid-template-columns:minmax(320px,.95fr) minmax(460px,1.05fr); gap:14px; height:100%; min-height:540px; }
+.preview-pane, .editor-pane { border:1px solid #d9e0ea; border-radius:12px; background:#fff; padding:8px; height:100%; }
+.preview-pane { display:flex; align-items:flex-start; justify-content:flex-start; overflow:auto; overscroll-behavior:contain; }
+.editor-pane { display:flex; flex-direction:column; gap:10px; min-width:0; }
+
+.preview-image-stage { position:relative; min-width:100%; }
+.preview-image-stage img { max-width:100%; width:100%; height:auto; border:0; display:block; }
+
+/* Line boxes */
+.line-overlay-box { position:absolute; border:2px solid rgba(59,130,246,.55); background:rgba(59,130,246,.06); cursor:pointer; padding:0; border-radius:2px; }
+.line-overlay-box:hover { border-color:#1f5eff; }
+.line-overlay-box.active { border-color:#1f5eff; background:rgba(31,94,255,.15); }
+
+/* Char alert boxes */
+.char-overlay-box { position:absolute; border-width:2px; border-style:solid; background:transparent; cursor:pointer; padding:0; border-radius:2px; }
+.char-overlay-box.alert-l1 { border-color:#ef4444; background:rgba(239,68,68,.15); }
+.char-overlay-box.alert-l2 { border-color:#eab308; background:rgba(234,179,8,.2); }
+.char-overlay-box.alert-both { border-color:#dc2626; background:rgba(234,88,12,.22); box-shadow:0 0 0 1px #eab308 inset; }
+
+/* Focus card */
+.proofread-focus-card { border:1px solid #e3e9f2; border-radius:12px; padding:10px; background:linear-gradient(180deg,#fbfdff,#f6f9ff); }
+.proofread-focus-head { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:8px; font-size:13px; color:#51627d; flex-wrap:wrap; }
+.proofread-focus-preview { min-height:180px; border:1px solid #e5ecf8; border-radius:10px; background:#f8fbff; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:grab; position:relative; }
+.proofread-focus-preview p { margin:0; font-size:13px; color:#70809c; }
+.proofread-focus-crop { width:100%; height:180px; background-repeat:no-repeat; background-color:#fff; }
+.focus-zoom-controls { display:flex; gap:4px; align-items:center; }
+.focus-zoom-controls button { padding:3px 8px; font-size:11px; min-width:28px; }
+.focus-zoom-controls span { font-size:11px; color:#51627d; min-width:36px; text-align:center; }
+
+/* Annotation toolbar */
+.anno-toolbar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px; border:1px solid #e3e9f2; border-radius:10px; background:#fbfdff; }
+.anno-toolbar .group-label { font-size:12px; color:#7a8aa3; padding-right:4px; }
+.anno-toolbar button { padding:5px 10px; font-size:13px; font-weight:600; min-width:34px; border:1px solid #c9d6ea; background:#fff; }
+.anno-toolbar button.symbol-btn { font-family:'SimSun','STSong',serif; font-size:15px; }
+.anno-toolbar button.wrap-btn { color:#1f5eff; }
+.anno-toolbar button.meibi-btn { color:#b45309; }
+.anno-toolbar .divider { width:1px; height:18px; background:#e3e9f2; margin:0 4px; }
+
+.sidebar-item .preview { font-size:11px; color:#7a8aa3; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:400; }
+.sidebar-item.active .preview { color:#1f3a6a; }
+.editor-search-wrap { position:relative; flex:1; min-height:0; overflow:hidden; }
+.editor-search-textarea { width:100%; height:100%; margin:0; padding:10px; border:none; outline:none; font-size:15px; line-height:1.7; font-family:inherit; white-space:pre-wrap; word-break:break-word; overflow:auto; background:#fff; color:#1d2738; caret-color:#111; resize:none; position:absolute; inset:0; }
+.position-tip { height:18px; margin-top:4px; font-size:12px; color:#5b677a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Source area */
+.source-area { margin-top:4px; display:flex; gap:8px; align-items:center; }
+.source-area label { font-size:13px; color:#51627d; font-weight:600; flex-shrink:0; }
+.source-area input { flex:1; border:1px solid #d9e0ea; border-radius:8px; padding:7px 10px; font-size:14px; font-family:inherit; }
+.source-area input:focus { outline:none; border-color:#1f5eff; box-shadow:0 0 0 3px rgba(31,94,255,.1); }
+
+.zoom-group { display:inline-flex; gap:6px; align-items:center; }
+.status-msg { font-size:13px; color:#2a6; margin-left:8px; min-width:0; }
+
+/* Rules modal */
+.modal-mask { position:fixed; inset:0; background:rgba(15,23,42,.48); z-index:50; display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal-mask.show { display:flex; }
+.modal-box { width:min(680px,92vw); max-height:82vh; overflow:auto; background:#fff; border-radius:14px; padding:20px 24px; box-shadow:0 20px 60px rgba(18,25,38,.22); }
+.modal-box h3 { margin:0 0 8px; font-size:17px; color:#1f3a6a; }
+.modal-box .close-btn { float:right; border:1px solid #e3e9f2; background:#fff; border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; }
+.modal-box code { background:#f4f7fc; padding:1px 6px; border-radius:4px; border:1px solid #e3ebf8; font-family:'SF Mono','Menlo',monospace; font-size:12px; color:#1f5eff; }
+.modal-box .rule-grid { display:grid; grid-template-columns:1fr; gap:6px; margin-top:8px; font-size:13px; color:#374a6a; line-height:1.75; }
+.modal-box .rule-grid b { color:#1f3a6a; }
+.legend-dot { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; border:1px solid rgba(0,0,0,.08); }
+.legend-dot.l1 { background:rgba(239,68,68,.6); border-color:#ef4444; }
+.legend-dot.l2 { background:rgba(234,179,8,.6); border-color:#eab308; }
+
+@media (max-width:1100px) {
+  .main-layout { grid-template-columns:1fr; height:auto; }
+  .proofread-layout { grid-template-columns:1fr; height:auto; }
+  .preview-pane, .editor-pane { min-height:420px; }
+}
+</style>
+<script src="data.js"></script>
+</head>
+<body>
+
+<section class="panel" id="app">
+  <div class="toolbar">
+    <h2>眉批 &amp; 圈点 OCR 校勘</h2>
+    <div class="toolbar-actions">
+      <div class="zoom-group">
+        <button onclick="updateScale(-0.1)">缩小</button>
+        <button onclick="updateScale(0)" id="scaleLabel">100%</button>
+        <button onclick="updateScale(0.1)">放大</button>
+      </div>
+      <button class="ghost-btn" id="undoBtn" onclick="handleUndo()" title="撤销上一步（Ctrl+Z）" disabled>↶ 撤销</button>
+      <button class="ghost-btn" id="bindJsonBtn" onclick="bindDataJson()" title="点击后选择 data.json，之后修改会实时写回该文件">📎 绑定 data.json</button>
+      <button class="ghost-btn" id="saveBtn" onclick="handleSave()" title="立即保存当前修改">💾 保存</button>
+      <button class="primary-btn" onclick="downloadExcel()">下载 Excel</button>
+      <button class="ghost-btn" id="downloadJsonBtn" onclick="downloadJsonBackup()" title="把当前所有修改导出为 data.json 备份">💾 导出 JSON 备份</button>
+      <button class="ghost-btn" onclick="showRulesModal()">📘 规则说明</button>
+      <span class="status-msg" id="statusMsg"></span>
+      <span id="saveBadge" style="font-size:12px;color:#5b677a;"></span>
+    </div>
+  </div>
+  <div id="fileProtocolTip" style="display:none;padding:8px 14px;margin:0 20px 10px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:12px;color:#92400e;">
+    ⚠️ 当前通过文件协议打开，修改仅保存在浏览器本地。建议点击"💾 导出 JSON 备份"定期保存，或通过 <a href="http://localhost:8080" target="_blank" style="color:#92400e;text-decoration:underline;">http://localhost:8080</a> 打开以绑定本地文件实时同步。
+  </div>
+
+  <div class="main-layout">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="proofread-layout">
+      <div class="preview-pane" id="previewPane"></div>
+      <div class="editor-pane">
+        <div class="proofread-focus-card">
+          <div class="proofread-focus-head">
+            <strong>聚焦校对</strong>
+            <div class="focus-zoom-controls">
+              <button onclick="updateFocusZoom(-0.5)">−</button>
+              <span id="focusZoomLabel">auto</span>
+              <button onclick="updateFocusZoom(0.5)">+</button>
+              <button onclick="resetFocusZoom()">重置</button>
+            </div>
+            <span id="focusLabel">将光标放到一行，或点击图片框</span>
+          </div>
+          <div class="proofread-focus-body">
+            <div class="proofread-focus-preview" id="focusPreviewContainer">
+              <p>选中行后显示局部放大图</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="anno-toolbar" id="annoToolbar">
+          <span class="group-label">结构：</span>
+          <button class="wrap-btn meibi-btn" onclick="annoWrap('<','>',true)" title="眉批：选中→包裹&lt;&gt;并换行；未选→插入&lt;&gt;">&lt;&gt; 眉批</button>
+          <button class="wrap-btn" onclick="annoWrap('【','】',false)" title="小字：选中→包裹【】；未选→插入【】">【】 小字</button>
+          <span class="divider"></span>
+          <span class="group-label">圈点：</span>
+          <button class="symbol-btn" onclick="annoInsertPerChar('●')" title="黑色实心点">●</button>
+          <button class="symbol-btn" onclick="annoInsertPerChar('○')" title="空心点">○</button>
+          <button class="symbol-btn" onclick="annoInsertPerChar('、')" title="顿号">、</button>
+          <button class="symbol-btn" onclick="annoInsertPerChar('◎')" title="双圈">◎</button>
+          <button class="symbol-btn" onclick="annoInsertDashes()" title="横线加重：-字-字-">-加重-</button>
+          <span class="divider"></span>
+          <button class="ghost-btn" onclick="annoClearSymbols()" title="清除选区圈点">清除</button>
+        </div>
+
+        <div class="editor-search-wrap">
+          <textarea class="editor-search-textarea" id="editorTextarea"
+            oninput="onTextInput()" onclick="onCaretMove()" onkeyup="onCaretMove()"></textarea>
+        </div>
+        <div class="position-tip" id="positionTip"></div>
+        <div style="margin:8px 0;display:flex;align-items:center;gap:10px;">
+          <button class="ghost-btn" id="confirmBtn" onclick="confirmPage()" title="标记当前页为已校对">✓ 确认此页无误</button>
+          <span id="confirmBadge" style="display:none;font-size:12px;color:#17803d;font-weight:600;">✓ 已校对</span>
+        </div>
+        <div class="source-area">
+          <label for="sourceInput">【备注】</label>
+          <input id="sourceInput" type="text" placeholder="填写当前页的备注" oninput="onSourceInput()">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Rules modal -->
+<div class="modal-mask" id="rulesModal" onclick="if(event.target===this)hideRulesModal()">
+  <div class="modal-box">
+    <button class="close-btn" onclick="hideRulesModal()">关闭 ✕</button>
+    <h3>标注规则说明</h3>
+    <div style="color:#51627d;font-size:12px;margin-top:2px;">
+      <span class="legend-dot l1"></span>红框 = OCR 置信度低（L1）&nbsp;&nbsp;
+      <span class="legend-dot l2"></span>黄框 = BERT 疑似错字（L2）
+    </div>
+    <div class="rule-grid">
+      <div><b>眉批</b>：在段落<b>前</b>加 <code>&lt;眉批内容&gt;</code>。选中文本 → 点 <code>&lt;&gt; 眉批</code> 自动包裹并换行；未选中 → 光标处插入 <code>&lt;&gt;</code>。</div>
+      <div><b>小字（夹注）</b>：用 <code>【小字内容】</code> 包裹。规则同上。</div>
+      <div><b>圈点符号</b>（不区分颜色；<i>有选区时</i>逐字插入，<i>无选区时</i>光标处插入一个）：</div>
+      <div>&nbsp;&nbsp;● 黑色实心点 &nbsp; ○ 空心点（句点/表音/圈点都用它）</div>
+      <div>&nbsp;&nbsp;、 顿号（不区分空心/实心） &nbsp; ◎ 双圈</div>
+      <div>&nbsp;&nbsp;<code>-加-重-</code> 横线加重（字间插入 <code>-</code>）</div>
+      <div style="margin-top:6px;"><b>撤销</b>：工具栏"↶ 撤销"或 <code>Ctrl+Z</code>，可撤销最近 50 步（跨页有效）。</div>
+      <div><b>自动保存（3 重保险）</b>：① 改动自动存浏览器本地（刷新不丢）；② 点"📎 绑定 data.json"后实时写回磁盘上的 JSON（需 Chrome/Edge）；③ 随时可点"💾 导出 JSON 备份"或"下载 Excel"留档。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict'
+
+let DATA = { pages: [] }
+let currentIndex = -1
+let previewScale = 1
+let selectedLineIndex = -1
+let naturalWidth = 0
+let naturalHeight = 0
+let focusZoom = 0, focusPanX = 0, focusPanY = 0
+let focusDragging = false
+let focusDragStart = { x:0, y:0, panX:0, panY:0 }
+
+// Undo stack — 支持最近 50 步（跨页）；每一项 { pageIndex, text, source, selStart, selEnd, scrollTop }
+const UNDO_MAX = 50
+let undoStack = []
+let suppressSnapshot = false  // 撤销过程中防止二次入栈
+
+// --- Position helpers ---
+function getPositionRect(position) {
+  if (!position) return null
+  if (Array.isArray(position) && position.length === 4 && typeof position[0] === 'number') {
+    const l = Math.min(position[0], position[2]), t = Math.min(position[1], position[3])
+    const r = Math.max(position[0], position[2]), b = Math.max(position[1], position[3])
+    return { left:l, top:t, width:r-l, height:b-t }
+  }
+  if (Array.isArray(position) && position.length && Array.isArray(position[0])) {
+    const xs = position.map(p=>p[0]), ys = position.map(p=>p[1])
+    const l = Math.min(...xs), t = Math.min(...ys), r = Math.max(...xs), b = Math.max(...ys)
+    return { left:l, top:t, width:r-l, height:b-t }
+  }
+  return null
+}
+
+function wordIsL1(w) {
+  if (w && w.l1_alert === true) return true
+  if (w && w.l1_alert === false) return false
+  const c = Number(w?.confidence), d = Number(w?.det_confidence)
+  return (Number.isFinite(c) && Number.isFinite(d)) ? (c * d) < 0.45 : false
+}
+function wordIsL2(w) { return w && w.l2_alert === true }
+
+// --- Data loading ---
+async function loadData() {
+  // 始终以 data.json 为真；data.js 作为 file:// 回退
+  let loaded = null
+  try {
+    const resp = await fetch('data.json', { cache:'no-store' })
+    if (resp.ok) loaded = await resp.json()
+  } catch {}
+  if (!loaded && typeof window.DATA_JSON !== 'undefined' && window.DATA_JSON.pages) {
+    loaded = window.DATA_JSON
+  }
+  if (!loaded || !loaded.pages || !loaded.pages.length) {
+    showStatus('未找到数据')
+    DATA = { pages: [] }
+    return
+  }
+  DATA = loaded
+  DATA.pages.forEach(p => { if (p.source === undefined) p.source = p.note || '' })
+  // 保存原始 OCR 文本，用于后续对比导出
+  DATA.pages.forEach(p => {
+    if (p.ocrText === undefined) {
+      p.ocrText = (p.classifiedLines || []).map(l => l.text || '').join('\n')
+    }
+  })
+  // 关键：从 localStorage 恢复最近编辑（刷新不丢）
+  const n = mergeFromLocalStorage()
+  if (n > 0) showStatus(`已从浏览器本地恢复 ${n} 处修改`)
+  renderSidebar()
+  updateUndoButton()
+  if (DATA.pages.length) selectPage(0)
+  // 首次渲染后显示一次 badge
+  setTimeout(() => updateSaveBadge(true, false), 100)
+}
+
+// --- Sidebar：只显示序号 · 文件名，不再渲染文本预览（性能关键） ---
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar')
+  const frag = document.createDocumentFragment()
+  DATA.pages.forEach((page, i) => {
+    const div = document.createElement('div')
+    div.className = 'sidebar-item' + (i === currentIndex ? ' active' : '')
+    div.id = 'sidebar-' + i
+    div.textContent = `${page.globalIndex}. ${page.fileName}`
+    div.onclick = () => selectPage(i)
+    frag.appendChild(div)
+  })
+  sidebar.innerHTML = ''
+  sidebar.appendChild(frag)
+}
+
+// --- Select page ---
+function selectPage(index) {
+  if (index < 0 || index >= DATA.pages.length) return
+  // 切页前把 debounce 中的内容立即刷盘
+  flushSaveNow()
+  const prev = currentIndex
+  currentIndex = index
+  selectedLineIndex = -1
+  // 注意：不清空 undoStack，撤销可跨页
+
+  if (prev >= 0) {
+    const el = document.getElementById('sidebar-' + prev)
+    if (el) el.classList.remove('active')
+  }
+  const el = document.getElementById('sidebar-' + index)
+  if (el) { el.classList.add('active'); el.scrollIntoView({ block:'nearest' }) }
+
+  renderPreview()
+  renderEditor()
+  updateFocus()
+}
+
+// --- Render preview ---
+function renderPreview() {
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  const pane = document.getElementById('previewPane')
+  const imgSrc = page.relPath
+  pane.innerHTML = `<div class="preview-image-stage" id="imageStage" style="width:${previewScale*100}%;min-width:${previewScale*100}%">
+    <img src="${encodeURI(imgSrc)}" alt="${page.fileName}" id="previewImg" onload="onImageLoad(this)">
+  </div>`
+}
+
+function onImageLoad(img) {
+  naturalWidth = img.naturalWidth
+  naturalHeight = img.naturalHeight
+  renderBoxes()
+}
+
+// 高性能 box 渲染：DocumentFragment 批量插入，使用 div 而非 button
+function renderBoxes() {
+  const page = DATA.pages[currentIndex]
+  if (!page || !naturalWidth) return
+  const stage = document.getElementById('imageStage')
+  if (!stage) return
+  // 清理旧框
+  stage.querySelectorAll('.line-overlay-box, .char-overlay-box').forEach(el => el.remove())
+  const lines = page.classifiedLines || []
+  const frag = document.createDocumentFragment()
+
+  lines.forEach((line, i) => {
+    const rect = getPositionRect(line?.position || line?.box)
+    if (rect) {
+      const div = document.createElement('div')
+      div.className = 'line-overlay-box' + (selectedLineIndex === i ? ' active' : '')
+      div.style.cssText = `left:${(rect.left/naturalWidth)*100}%;top:${(rect.top/naturalHeight)*100}%;width:${(rect.width/naturalWidth)*100}%;height:${(rect.height/naturalHeight)*100}%`
+      div.dataset.lineIdx = i
+      frag.appendChild(div)
+    }
+    ;(line.words || []).forEach((w, wi) => {
+      const l1 = wordIsL1(w), l2 = wordIsL2(w)
+      if (!l1 && !l2) return
+      const wr = getPositionRect(w.position || w.box)
+      if (!wr) return
+      const cls = (l1 && l2) ? 'alert-both' : (l1 ? 'alert-l1' : 'alert-l2')
+      const div = document.createElement('div')
+      div.className = 'char-overlay-box ' + cls
+      div.style.cssText = `left:${(wr.left/naturalWidth)*100}%;top:${(wr.top/naturalHeight)*100}%;width:${(wr.width/naturalWidth)*100}%;height:${(wr.height/naturalHeight)*100}%`
+      const tipParts = []
+      if (l1) tipParts.push(`L1 conf=${(w.confidence||0).toFixed(2)}·det=${(w.det_confidence||0).toFixed(2)}`)
+      if (l2) tipParts.push(`L2 建议:${w.suggest || w.siku_top1 || '?'} gap=${w.siku_gap ?? '-'}`)
+      div.title = `第${i+1}行·第${wi+1}字「${w.text||''}」\n` + tipParts.join('\n')
+      div.dataset.lineIdx = i
+      frag.appendChild(div)
+    })
+  })
+  stage.appendChild(frag)
+
+  // 使用 stage 级事件委托，替代逐个元素绑定 onclick
+  if (!stage._hasDelegatedClick) {
+    stage.addEventListener('click', ev => {
+      const box = ev.target.closest('.line-overlay-box,.char-overlay-box')
+      if (!box) return
+      const idx = Number(box.dataset.lineIdx)
+      if (Number.isFinite(idx)) { ev.stopPropagation(); focusLine(idx) }
+    })
+    stage._hasDelegatedClick = true
+  }
+}
+
+// --- Editor ---
+function renderEditor() {
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  let text = page.text || ''
+  if (!text && page.classifiedLines?.length) {
+    text = page.classifiedLines.map(l => l.text || '').join('\n')
+  }
+  document.getElementById('editorTextarea').value = text
+  document.getElementById('sourceInput').value = page.source || ''
+  const badge = document.getElementById('confirmBadge')
+  const btn = document.getElementById('confirmBtn')
+  if (page.checked) {
+    badge.style.display = 'inline'
+    btn.textContent = '✓ 已确认'
+    btn.disabled = true
+  } else {
+    badge.style.display = 'none'
+    btn.textContent = '✓ 确认此页无误'
+    btn.disabled = false
+  }
+}
+
+function confirmPage() {
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  page.checked = true
+  scheduleSave()
+  renderEditor()
+  renderSidebar()
+  showStatus('已标记为校对完成')
+}
+
+// 文本输入：仅更新 DATA 和防抖保存，不再触碰侧栏 DOM
+function onTextInput() {
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  page.text = document.getElementById('editorTextarea').value
+  scheduleSave()
+}
+function onSourceInput() {
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  page.source = document.getElementById('sourceInput').value
+  scheduleSave()
+}
+function onCaretMove() {
+  // 使用节流的高亮同步，避免每次按键都跑
+  if (onCaretMove._t) return
+  onCaretMove._t = setTimeout(() => { onCaretMove._t = null; syncHighlight() }, 120)
+}
+
+// --- 实时保存（静态优先）---
+// 策略：
+//   1) 每次编辑 → 100ms 防抖后写入 localStorage（刷新不会丢）
+//   2) 如果用户点过'绑定 data.json'，再额外把完整 JSON 写回选中的磁盘文件（File System Access API）
+//   3) 页面卸载前同步 flush（sendBeacon 无关，纯前端即可）
+const LS_KEY = 'meipi-quandian-v3'
+let saveTimer = null
+let jsonFileHandle = null  // 用户绑定的 data.json FileSystemFileHandle
+let jsonPending = false    // 是否有待写入磁盘的更新
+let lastSavedAt = 0
+
+function scheduleSave() {
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(flushSaveNow, 200)
+}
+function saveToLocalStorage() {
+  try {
+    // 只存用户编辑后的字段，体积足够小（60 页 × 几百字）
+    const light = { pages: DATA.pages.map(p => ({ relPath:p.relPath, text:p.text||'', source:p.source||'', checked:!!p.checked })) }
+    localStorage.setItem(LS_KEY, JSON.stringify(light))
+    return true
+  } catch (e) {
+    return false
+  }
+}
+async function writeJsonFile() {
+  if (!jsonFileHandle) return false
+  try {
+    // 校验权限（Chrome 有时会过期）
+    const perm = await jsonFileHandle.queryPermission({ mode: 'readwrite' })
+    if (perm !== 'granted') {
+      const req = await jsonFileHandle.requestPermission({ mode: 'readwrite' })
+      if (req !== 'granted') throw new Error('permission denied')
+    }
+    const writable = await jsonFileHandle.createWritable()
+    // 为了保持文件紧凑，不缩进
+    await writable.write(JSON.stringify(DATA))
+    await writable.close()
+    // 同时更新 data.js（如果同目录下存在且也绑定了可写目录，忽略——绑 json 即可）
+    return true
+  } catch (e) {
+    console.warn('[writeJsonFile] failed', e)
+    return false
+  }
+}
+async function flushSaveNow() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+  const okLs = saveToLocalStorage()
+  let okJson = false
+  if (jsonFileHandle) { okJson = await writeJsonFile() }
+  lastSavedAt = Date.now()
+  updateSaveBadge(okLs, okJson)
+}
+function updateSaveBadge(okLs, okJson) {
+  const el = document.getElementById('saveBadge')
+  if (!el) return
+  const t = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+  if (jsonFileHandle) {
+    el.textContent = okJson ? `✓ 已写入 data.json · ${t}` : '⚠ 写入 data.json 失败，已存浏览器本地'
+    el.style.color = okJson ? '#17803d' : '#b45309'
+  } else {
+    el.textContent = okLs ? `✓ 已存浏览器本地 · ${t}` : '⚠ 本地保存失败'
+    el.style.color = okLs ? '#51627d' : '#b45309'
+  }
+}
+// 卸载前同步 flush（localStorage 是同步的，File System 无法同步写，但最新数据至少在 localStorage 里）
+window.addEventListener('beforeunload', () => {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+  saveToLocalStorage()
+})
+
+// --- 启动时：若 localStorage 有更新过的内容，合并覆盖 DATA（保证刷新不丢）---
+function mergeFromLocalStorage() {
+  try {
+    const s = localStorage.getItem(LS_KEY)
+    if (!s) return 0
+    const saved = JSON.parse(s)
+    if (!saved?.pages) return 0
+    const map = {}
+    saved.pages.forEach(p => { map[p.relPath] = p })
+    let n = 0
+    DATA.pages.forEach(p => {
+      const s = map[p.relPath]
+      if (!s) return
+      if (s.text !== undefined && s.text !== p.text) { p.text = s.text; n++ }
+      if (s.source !== undefined && s.source !== p.source) { p.source = s.source; n++ }
+      if (s.checked !== undefined && s.checked !== p.checked) { p.checked = s.checked; n++ }
+    })
+    return n
+  } catch { return 0 }
+}
+
+// --- 绑定 data.json：让网页直接把修改写回磁盘上那个 JSON 文件 ---
+async function bindDataJson() {
+  if (!('showOpenFilePicker' in window)) {
+    alert('你的浏览器不支持直接写文件。\n\n建议：用 Chrome 或 Edge 打开本页；或者用"💾 导出 JSON 备份"按钮。\n\n不管怎样，修改不会丢——全都自动存在浏览器本地，刷新也在。')
+    return
+  }
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'data.json', accept: { 'application/json': ['.json'] } }],
+      multiple: false,
+    })
+    // 请求写权限
+    const perm = await handle.requestPermission({ mode: 'readwrite' })
+    if (perm !== 'granted') { alert('未授予写权限'); return }
+    jsonFileHandle = handle
+    const btn = document.getElementById('bindJsonBtn')
+    btn.textContent = '✓ 已绑定 data.json'
+    btn.classList.remove('ghost-btn')
+    btn.classList.add('primary-btn')
+    btn.title = '再次点击可换绑另一个文件'
+    await flushSaveNow()
+    showStatus('已绑定 data.json，之后修改会实时写回该文件')
+  } catch (e) {
+    if (e.name !== 'AbortError') showStatus('绑定失败：' + e.message)
+  }
+}
+
+async function handleSave() {
+  await flushSaveNow()
+  showStatus('已保存')
+}
+
+// --- 一键导出 JSON 备份（不依赖服务端，任何浏览器都能用）---
+function downloadJsonBackup() {
+  const exportData = {
+    pages: DATA.pages.map(p => {
+      const hasText = (p.text || '').trim().length > 0
+      const isModified = hasText && p.text !== p.ocrText
+      return {
+        globalIndex: p.globalIndex,
+        原本txt: p.ocrText || '',
+        改后txt: isModified ? (p.text || '') : (p.ocrText || ''),
+        状态: isModified ? '已修改' : (p.checked ? '已校对' : '未校对'),
+        备注: p.source || ''
+      }
+    })
+  }
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'data.json'
+  document.body.appendChild(a); a.click(); a.remove()
+  URL.revokeObjectURL(url)
+  showStatus('已导出 JSON')
+}
+
+// --- 标注工具栏 ---
+function takeUndoSnapshot() {
+  if (suppressSnapshot) return
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  const ta = document.getElementById('editorTextarea')
+  undoStack.push({
+    pageIndex: currentIndex,
+    text: page.text || '',
+    source: page.source || '',
+    selStart: ta.selectionStart,
+    selEnd: ta.selectionEnd,
+    scrollTop: ta.scrollTop,
+  })
+  if (undoStack.length > UNDO_MAX) undoStack.shift()
+  updateUndoButton()
+}
+function updateUndoButton() {
+  const btn = document.getElementById('undoBtn')
+  if (!btn) return
+  btn.disabled = undoStack.length === 0
+  btn.textContent = undoStack.length ? `↶ 撤销 (${undoStack.length})` : '↶ 撤销'
+}
+function handleUndo() {
+  if (!undoStack.length) return
+  const snap = undoStack.pop()
+  suppressSnapshot = true
+  const doRestore = () => {
+    const page = DATA.pages[snap.pageIndex]
+    if (!page) { suppressSnapshot = false; return }
+    page.text = snap.text
+    page.source = snap.source
+    const ta = document.getElementById('editorTextarea')
+    ta.value = snap.text
+    document.getElementById('sourceInput').value = snap.source
+    ta.focus()
+    ta.setSelectionRange(snap.selStart, snap.selEnd)
+    ta.scrollTop = snap.scrollTop
+    updateUndoButton()
+    scheduleSave()
+    showStatus('已撤销')
+    suppressSnapshot = false
+  }
+  if (snap.pageIndex !== currentIndex) {
+    selectPage(snap.pageIndex)
+    setTimeout(doRestore, 0)
+  } else {
+    doRestore()
+  }
+}
+
+function getTextareaSel() {
+  const ta = document.getElementById('editorTextarea')
+  return { ta, start: ta.selectionStart, end: ta.selectionEnd, value: ta.value, selected: ta.value.slice(ta.selectionStart, ta.selectionEnd) }
+}
+
+/**
+ * 把 [start,end) 这段替换为 replacement，指定新光标/选区；不触发 input 事件，
+ * 我们手动同步 DATA + 保存；保留 scrollTop，避免跳顶。
+ */
+function replaceRange(start, end, replacement, newSelStart, newSelEnd) {
+  takeUndoSnapshot()
+  const ta = document.getElementById('editorTextarea')
+  const scrollTop = ta.scrollTop
+  const before = ta.value.slice(0, start)
+  const after = ta.value.slice(end)
+  const v = before + replacement + after
+  ta.value = v
+  if (newSelStart === undefined) newSelStart = start + replacement.length
+  if (newSelEnd === undefined) newSelEnd = newSelStart
+  // 顺序：先 focus，再 setSelectionRange，最后还原 scrollTop，防止自动滚动到光标
+  ta.focus()
+  ta.setSelectionRange(newSelStart, newSelEnd)
+  ta.scrollTop = scrollTop
+  // 同步 DATA + 保存
+  const page = DATA.pages[currentIndex]
+  if (page) { page.text = v; scheduleSave() }
+}
+
+function annoWrap(l, r, meibiNewline) {
+  const sel = getTextareaSel()
+  if (sel.start === sel.end) {
+    // 未选区：直接在光标处插入一对括号/尖括号，并把光标放中间
+    const insert = meibiNewline
+      ? ((sel.start > 0 && sel.value[sel.start-1] !== '\n') ? '\n' : '') + l + r + '\n'
+      : l + r
+    const caret = sel.start + (meibiNewline && sel.start > 0 && sel.value[sel.start-1] !== '\n' ? 1 : 0) + l.length
+    replaceRange(sel.start, sel.end, insert, caret, caret)
+    return
+  }
+  let wrapped = l + sel.selected + r
+  let extraBefore = 0
+  if (meibiNewline) {
+    const needBefore = sel.start > 0 && sel.value[sel.start-1] !== '\n'
+    const needAfter = sel.end < sel.value.length && sel.value[sel.end] !== '\n'
+    if (needBefore) { wrapped = '\n' + wrapped; extraBefore = 1 }
+    if (needAfter) wrapped = wrapped + '\n'
+  }
+  const newEnd = sel.start + extraBefore + l.length + sel.selected.length + r.length
+  replaceRange(sel.start, sel.end, wrapped, sel.start + extraBefore, newEnd)
+}
+
+function annoInsertPerChar(sym) {
+  const sel = getTextareaSel()
+  if (sel.start === sel.end) {
+    // 未选区：光标处插入一个符号
+    replaceRange(sel.start, sel.end, sym, sel.start + sym.length, sel.start + sym.length)
+    return
+  }
+  const chars = Array.from(sel.selected)
+  const out = chars.map(c => /\s/.test(c) ? c : c + sym).join('')
+  replaceRange(sel.start, sel.end, out, sel.start, sel.start + out.length)
+}
+
+function annoInsertDashes() {
+  const sel = getTextareaSel()
+  if (sel.start === sel.end) {
+    replaceRange(sel.start, sel.end, '-', sel.start + 1, sel.start + 1)
+    return
+  }
+  const chars = Array.from(sel.selected).filter(c => !/\s/.test(c))
+  if (!chars.length) { showStatus('片段为空'); return }
+  const out = '-' + chars.join('-') + '-'
+  replaceRange(sel.start, sel.end, out, sel.start, sel.start + out.length)
+}
+
+function annoClearSymbols() {
+  const sel = getTextareaSel()
+  if (sel.start === sel.end) { showStatus('请先选中要清除符号的片段'); return }
+  const cleaned = sel.selected.replace(/[●○、◎]/g, '').replace(/-/g, '')
+  replaceRange(sel.start, sel.end, cleaned, sel.start, sel.start + cleaned.length)
+}
+
+// --- Focus / highlight ---
+// 统一规范化：剔除标注符号和空白，用于文本片段比较
+function _normalize(s) {
+  return (s || '').replace(/[【】<>●○、◎\-\s]/g, '')
+}
+// 在全文本里找到 lineText 最匹配的位置，返回 {lineIdx, charStart, charEnd} 或 null
+function locateLineInEditor(editorText, lineText) {
+  const target = _normalize(lineText)
+  if (!target) return null
+  const editorLines = editorText.split('\n')
+  // 1) 先找完整包含（避免首尾标点差异干扰，用 >=3 字的前缀做锚点）
+  const probe = target.slice(0, Math.min(target.length, 6))
+  let bestIdx = -1, bestScore = -1
+  for (let i = 0; i < editorLines.length; i++) {
+    const cleanLine = _normalize(editorLines[i])
+    if (!cleanLine) continue
+    // 精确匹配（双向包含）优先
+    if (cleanLine.includes(target) || (target.length >= 4 && target.includes(cleanLine))) {
+      const score = Math.min(cleanLine.length, target.length) * 10
+      if (score > bestScore) { bestScore = score; bestIdx = i }
+      continue
+    }
+    // 前缀锚点匹配
+    if (probe.length >= 3 && cleanLine.includes(probe)) {
+      const score = probe.length
+      if (score > bestScore) { bestScore = score; bestIdx = i }
+    }
+  }
+  if (bestIdx < 0) return null
+  // 计算该行在全文 text 中的 [start,end]
+  let start = 0
+  for (let i = 0; i < bestIdx; i++) start += editorLines[i].length + 1
+  return { lineIdx: bestIdx, charStart: start, charEnd: start + editorLines[bestIdx].length }
+}
+
+function focusLine(lineIndex) {
+  if (lineIndex !== selectedLineIndex) { focusZoom = 0; focusPanX = 0; focusPanY = 0 }
+  selectedLineIndex = lineIndex
+  renderBoxes()
+  updateFocus()
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  const lines = page.classifiedLines || []
+  const line = lines[lineIndex]
+  if (!line) return
+  const ta = document.getElementById('editorTextarea')
+  const hit = locateLineInEditor(ta.value, line.text)
+  if (hit) {
+    // 选中整行（便于一眼看到）并滚动进入视口中段
+    ta.focus()
+    ta.setSelectionRange(hit.charStart, hit.charEnd)
+    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 26
+    ta.scrollTop = Math.max(0, lineHeight * hit.lineIdx - ta.clientHeight / 3)
+  }
+}
+
+function syncHighlight() {
+  const page = DATA.pages[currentIndex]
+  if (!page) return
+  const ta = document.getElementById('editorTextarea')
+  const caret = ta.selectionStart || 0
+  const before = ta.value.slice(0, caret)
+  const editorLineIdx = before.split('\n').length - 1
+  const lines = page.classifiedLines || []
+  const editorLines = (page.text || '').split('\n')
+  const editorLineText = (editorLines[editorLineIdx] || '').replace(/[【】<>●○、◎\-]/g, '').replace(/\s/g, '')
+  let bestLine = -1, bestScore = 0
+  lines.forEach((line, i) => {
+    const ocrText = (line.text || '').trim().replace(/\s/g, '')
+    if (!ocrText || !editorLineText) return
+    if (ocrText === editorLineText || editorLineText.includes(ocrText) || ocrText.includes(editorLineText)) {
+      const score = Math.min(ocrText.length, editorLineText.length) / Math.max(ocrText.length, editorLineText.length, 1)
+      if (score > bestScore) { bestScore = score; bestLine = i }
+    }
+  })
+  if (bestLine >= 0 && bestLine !== selectedLineIndex) {
+    selectedLineIndex = bestLine
+    renderBoxes()
+    updateFocus()
+  }
+}
+
+function updateFocus() {
+  const page = DATA.pages[currentIndex]
+  const lines = page?.classifiedLines || []
+  const line = selectedLineIndex >= 0 ? lines[selectedLineIndex] : null
+  const l1c = (line?.words || []).filter(wordIsL1).length
+  const l2c = (line?.words || []).filter(wordIsL2).length
+  document.getElementById('focusLabel').textContent = line
+    ? `OCR 第 ${selectedLineIndex + 1} 行 （红${l1c}·黄${l2c}）`
+    : '将光标放到一行，或点击图片框'
+
+  const container = document.getElementById('focusPreviewContainer')
+  if (!line || !naturalWidth) {
+    container.innerHTML = '<p>选中行后显示局部放大图</p>'
+    document.getElementById('focusZoomLabel').textContent = 'auto'
+  } else {
+    const rect = getPositionRect(line.position || line.box)
+    if (!rect) container.innerHTML = '<p>无坐标信息</p>'
+    else {
+      const imgSrc = page.relPath
+      const autoZoom = Math.max(1.8, Math.min(6, 180 / Math.max(rect.height, 24)))
+      const zoom = focusZoom > 0 ? focusZoom : autoZoom
+      const bgW = naturalWidth * zoom
+      const bgH = naturalHeight * zoom
+      const bgX = -(rect.left * zoom - 20) + focusPanX
+      const bgY = -(rect.top * zoom - 20) + focusPanY
+      container.innerHTML = `<div class="proofread-focus-crop" id="focusCrop" style="background-image:url('${encodeURI(imgSrc)}');background-size:${bgW}px ${bgH}px;background-position:${bgX}px ${bgY}px"></div>`
+      document.getElementById('focusZoomLabel').textContent = focusZoom > 0 ? `${Math.round(zoom * 100 / autoZoom)}%` : 'auto'
+      const crop = document.getElementById('focusCrop')
+      if (crop) {
+        crop.addEventListener('wheel', onFocusWheel, { passive:false })
+        crop.addEventListener('mousedown', onFocusDragStart)
+      }
+    }
+  }
+  const tip = document.getElementById('positionTip')
+  tip.textContent = line ? `${JSON.stringify(line.position || line.box)}` : '当前文本行暂未匹配到原图坐标框'
+}
+
+function updateFocusZoom(delta) {
+  const page = DATA.pages[currentIndex]
+  const lines = page?.classifiedLines || []
+  const line = selectedLineIndex >= 0 ? lines[selectedLineIndex] : null
+  if (!line) return
+  const rect = getPositionRect(line.position || line.box)
+  if (!rect) return
+  const autoZoom = Math.max(1.8, Math.min(6, 180 / Math.max(rect.height, 24)))
+  const current = focusZoom > 0 ? focusZoom : autoZoom
+  focusZoom = Math.max(0.5, Math.min(20, current + delta))
+  updateFocus()
+}
+function resetFocusZoom() { focusZoom = 0; focusPanX = 0; focusPanY = 0; updateFocus() }
+function onFocusWheel(e) { e.preventDefault(); updateFocusZoom(e.deltaY > 0 ? -0.3 : 0.3) }
+function onFocusDragStart(e) {
+  e.preventDefault()
+  focusDragging = true
+  focusDragStart = { x:e.clientX, y:e.clientY, panX:focusPanX, panY:focusPanY }
+  document.addEventListener('mousemove', onFocusDragMove)
+  document.addEventListener('mouseup', onFocusDragEnd)
+}
+function onFocusDragMove(e) {
+  if (!focusDragging) return
+  focusPanX = focusDragStart.panX + (e.clientX - focusDragStart.x)
+  focusPanY = focusDragStart.panY + (e.clientY - focusDragStart.y)
+  const crop = document.getElementById('focusCrop'); if (!crop) return
+  const page = DATA.pages[currentIndex]
+  const lines = page?.classifiedLines || []
+  const line = selectedLineIndex >= 0 ? lines[selectedLineIndex] : null
+  if (!line) return
+  const rect = getPositionRect(line.position || line.box); if (!rect) return
+  const autoZoom = Math.max(1.8, Math.min(6, 180 / Math.max(rect.height, 24)))
+  const zoom = focusZoom > 0 ? focusZoom : autoZoom
+  const bgX = -(rect.left * zoom - 20) + focusPanX
+  const bgY = -(rect.top * zoom - 20) + focusPanY
+  crop.style.backgroundPosition = `${bgX}px ${bgY}px`
+}
+function onFocusDragEnd() {
+  focusDragging = false
+  document.removeEventListener('mousemove', onFocusDragMove)
+  document.removeEventListener('mouseup', onFocusDragEnd)
+}
+
+function updateScale(delta) {
+  if (delta === 0) previewScale = 1
+  else previewScale = Math.max(0.4, Math.min(3, previewScale + delta))
+  document.getElementById('scaleLabel').textContent = Math.round(previewScale * 100) + '%'
+  const stage = document.getElementById('imageStage')
+  if (stage) { stage.style.width = `${previewScale * 100}%`; stage.style.minWidth = `${previewScale * 100}%` }
+}
+
+// --- Excel 导出 ---
+function buildExcelXml() {
+  const rows = [['序号', '原本txt', '改后txt', '状态', '备注']]
+  DATA.pages.forEach(p => {
+    const hasText = (p.text || '').trim().length > 0
+    const isModified = hasText && p.text !== p.ocrText
+    const status = isModified ? '已修改' : (p.checked ? '已校对' : '未校对')
+    rows.push([
+      String(p.globalIndex),
+      p.ocrText || '',
+      isModified ? (p.text || '') : (p.ocrText || ''),
+      status,
+      p.source || ''
+    ])
+  })
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;').replace(/\n/g,'&#10;')
+  const cellRows = rows.map(row => {
+    const cells = row.map(v => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join('')
+    return `<Row>${cells}</Row>`
+  }).join('')
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+ <Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#E8F0FE" ss:Pattern="Solid"/></Style>
+ <Style ss:ID="Default"><Alignment ss:Vertical="Top" ss:WrapText="1"/></Style>
+</Styles>
+<Worksheet ss:Name="眉批圈点校勘">
+<Table>
+ <Column ss:Width="60"/><Column ss:Width="300"/><Column ss:Width="300"/><Column ss:Width="80"/><Column ss:Width="160"/>
+ ${cellRows}
+</Table></Worksheet></Workbook>`
+}
+function downloadExcel() {
+  flushSaveNow()
+  const xml = buildExcelXml()
+  const blob = new Blob([xml], { type:'application/vnd.ms-excel;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = '眉批圈点-校勘结果.xls'
+  document.body.appendChild(a); a.click(); a.remove()
+  URL.revokeObjectURL(url)
+  showStatus(`已下载 Excel（${DATA.pages.length} 行）`)
+}
+
+// --- 规则弹窗 ---
+function showRulesModal() { document.getElementById('rulesModal').classList.add('show') }
+function hideRulesModal() { document.getElementById('rulesModal').classList.remove('show') }
+
+function showStatus(msg) {
+  const el = document.getElementById('statusMsg')
+  el.textContent = msg
+  clearTimeout(showStatus._t)
+  showStatus._t = setTimeout(() => { el.textContent = '' }, 2600)
+}
+
+// --- 快捷键：方向键翻页、Ctrl/Cmd+Z 撤销、Esc 关闭弹窗 ---
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { hideRulesModal(); return }
+  // Undo
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    if (undoStack.length) { e.preventDefault(); handleUndo(); return }
+    // 否则让浏览器默认 undo（针对 textarea 的输入历史）
+    return
+  }
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); selectPage(Math.max(0, currentIndex - 1)) }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); selectPage(Math.min(DATA.pages.length - 1, currentIndex + 1)) }
+})
+
+  if (window.location.protocol === 'file:') {
+    document.getElementById('fileProtocolTip').style.display = 'block'
+  }
+  loadData()
+</script>
+</body>
+</html>

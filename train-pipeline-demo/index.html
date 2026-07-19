@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>vRain Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── 顶栏 ── -->
+<header class="topbar">
+  <div class="logo">⛰ vRain <em>Studio</em></div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="preview">版面预览</button>
+    <button class="tab" data-tab="annotate">图片标注</button>
+  </nav>
+  <div class="topbar-right">
+    <span id="server-dot" class="dot-off"></span>
+    <span id="server-label">连接中…</span>
+  </div>
+</header>
+
+<!-- ── 主体 ── -->
+<main class="main">
+
+  <!-- ══ TAB：版面预览 ══ -->
+  <section class="tab-panel active" id="tab-preview">
+
+    <!-- 左：版式列表 + 参数面板 -->
+    <aside class="sidebar">
+
+      <div class="sb-block">
+        <div class="sb-title">
+          版式文件
+          <button class="mbtn" id="btn-new">＋ 新建</button>
+        </div>
+        <div id="layout-list" class="layout-list"></div>
+      </div>
+
+      <div class="sb-block grow">
+        <div class="sb-title">
+          <span id="editing-id">参数配置</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span id="dirty-dot" class="dirty-dot" title="有未保存的修改" style="display:none">●</span>
+            <button class="mbtn danger" id="btn-delete">删除</button>
+            <button class="mbtn primary" id="btn-save">保存</button>
+          </div>
+        </div>
+        <div id="param-groups" class="param-groups"></div>
+      </div>
+
+      <div class="sb-block grow" style="min-height:0;overflow:hidden;display:none" id="sb-images">
+        <div class="sb-title">
+          <span>图片素材</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span id="img-sel-count" style="font-size:11px;color:var(--muted)">已选 0 张</span>
+            <button class="mbtn" id="btn-img-refresh">刷新</button>
+            <button class="mbtn" id="btn-img-clear">清空</button>
+          </div>
+        </div>
+        <div id="image-gallery" class="image-gallery"></div>
+      </div>
+
+    </aside>
+
+    <!-- 右：预览区 -->
+    <div class="preview-wrap">
+
+      <!-- 预览控制栏 -->
+      <div class="preview-bar">
+        <div style="display:flex;align-items:center;gap:8px">
+          <label class="bar-label">预览页数</label>
+          <select id="sel-pages">
+            <option value="1">1页</option>
+            <option value="2" selected>2页</option>
+            <option value="3">3页</option>
+            <option value="4">4页</option>
+            <option value="6">6页</option>
+          </select>
+          <button class="mbtn primary" id="btn-preview">▶ 运行排版预览</button>
+          <span id="preview-spinner" class="spinner" style="display:none"></span>
+          <span id="preview-hint" class="bar-hint">调用真实排版引擎生成效果图</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="mbtn" id="zoom-out">－</button>
+          <span id="zoom-val">80%</span>
+          <button class="mbtn" id="zoom-in">＋</button>
+          <button class="mbtn" id="zoom-fit">适应</button>
+        </div>
+      </div>
+
+      <!-- 图片展示区 -->
+      <div class="preview-body" id="preview-body">
+        <div class="preview-empty" id="preview-empty">
+          <div class="empty-icon">⛰</div>
+          <div class="empty-title">点击「运行排版预览」</div>
+          <div class="empty-desc">将用当前版式配置 + 内置示例文本调用 vrain.py 生成真实排版效果图</div>
+          <button class="mbtn primary" id="btn-preview2" style="margin-top:16px;padding:8px 24px;font-size:14px">▶ 运行排版预览</button>
+        </div>
+        <div id="preview-pages" style="display:none"></div>
+      </div>
+
+      <!-- 状态栏 -->
+      <div class="status-bar" id="status-bar">—</div>
+    </div>
+
+  </section>
+
+  <!-- ══ TAB：图片标注 ══ -->
+  <section class="tab-panel" id="tab-annotate">
+    <aside class="sidebar">
+      <div class="sb-block">
+        <div class="sb-title">上传扫描图</div>
+        <div class="upload-zone" id="upload-zone">
+          <div style="font-size:28px;margin-bottom:6px">🖼</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">拖拽或点击上传<br>古籍扫描图</div>
+          <input type="file" id="upload-input" accept="image/*" hidden>
+        </div>
+        <div id="upload-status" style="padding:5px 10px 6px;font-size:11px;color:var(--muted);display:none"></div>
+      </div>
+      <div class="sb-block">
+        <div class="sb-title">标注工具</div>
+        <div style="padding:6px 8px 4px;display:flex;flex-direction:column;gap:3px">
+          <button class="anno-btn active" data-tool="body">📝 正文区域（框选）</button>
+          <div class="anno-tip">推算四边留白 margins_*</div>
+          <button class="anno-btn" data-tool="margin">📌 眉批区域（框选）</button>
+          <div class="anno-tip">推算眉批起始位置 fish_top_y</div>
+          <button class="anno-btn" data-tool="hsplit">— 眉批/正文分界线（点击）</button>
+          <div class="anno-tip">点击设置一条横线切割正文与眉批</div>
+          <button class="anno-btn" data-tool="col_box">┃ 列框（逐列框选）</button>
+          <div class="anno-tip">每列框一个竖条 → 存列位置+列宽，自适应字号/行数</div>
+          <button class="anno-btn" data-tool="center">⟷ 版心区域（框选）</button>
+          <div class="anno-tip">框选版心空白区域，宽度直接作为 leaf_center_width</div>
+          <button class="anno-btn" data-tool="row">─ 行线（逐行点击）</button>
+          <div class="anno-tip">点 N 条线 → row_num = N+1，所有列共用</div>
+          <button class="anno-btn" data-tool="img_zone" style="border-color:rgba(220,40,180,.7);color:rgba(200,20,160,1)">🖼 图片区域（框选）</button>
+          <div class="anno-tip">框选放置插图的矩形区域，支持多个；写入 image_zones，排版时随机贴图</div>
+        </div>
+        <div style="padding:2px 8px 8px">
+          <button class="mbtn danger" id="btn-anno-clear" style="width:100%">清除全部</button>
+        </div>
+      </div>
+      <div class="sb-block grow" style="overflow:hidden">
+        <div class="sb-title">推算结果</div>
+        <div id="anno-result" style="padding:6px 10px;font-size:12px;line-height:1.8;overflow-y:auto">
+          <span style="color:var(--muted)">尚未标注</span>
+        </div>
+        <div style="padding:6px 8px 10px">
+          <button class="mbtn primary" id="btn-anno-apply" disabled style="width:100%">写入当前版式配置 →</button>
+        </div>
+      </div>
+    </aside>
+    <div class="preview-wrap">
+      <div class="preview-bar">
+        <span style="font-size:12px;color:var(--muted)">在图上拖拽/点击标注区域，自动推算配置参数</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="mbtn" id="anno-zoom-out">－</button>
+          <span id="anno-zoom-val">100%</span>
+          <button class="mbtn" id="anno-zoom-in">＋</button>
+        </div>
+      </div>
+      <div class="preview-body" id="anno-body">
+        <div class="preview-empty" id="anno-placeholder">
+          <div class="empty-icon">🖼</div>
+          <div class="empty-title">上传古籍扫描图</div>
+          <div class="empty-desc">支持 jpg / png，上传后可框选正文区域、点击标记列线行线</div>
+        </div>
+        <canvas id="anno-canvas" style="display:none;cursor:crosshair"></canvas>
+      </div>
+      <div class="status-bar" id="anno-coord">—</div>
+    </div>
+  </section>
+
+
+</main>
+
+<!-- ── 新建版式弹窗 ── -->
+<div class="overlay" id="overlay-new">
+  <div class="modal">
+    <div class="modal-title">新建版式</div>
+    <div class="modal-field">
+      <label>版式 ID（字母/数字/下划线，将作为文件名）</label>
+      <input id="new-id" type="text" placeholder="例：my_layout_18col" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>复制自</label>
+      <select id="new-base"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="mbtn" id="btn-new-cancel">取消</button>
+      <button class="mbtn primary" id="btn-new-confirm">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 写入版式弹窗（标注后选择目标版式） ── -->
+<div class="overlay" id="overlay-apply">
+  <div class="modal">
+    <div class="modal-title">将标注结果写入版式</div>
+    <div class="modal-field">
+      <label>选择目标版式</label>
+      <select id="apply-target"></select>
+    </div>
+    <div id="apply-preview" style="margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:12px;line-height:1.9;color:var(--muted)">
+      将写入以下参数：
+    </div>
+    <div class="modal-actions">
+      <button class="mbtn" id="btn-apply-cancel">取消</button>
+      <button class="mbtn primary" id="btn-apply-confirm">写入并切换到预览</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

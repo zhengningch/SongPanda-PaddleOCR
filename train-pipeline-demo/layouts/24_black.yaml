@@ -1,0 +1,94 @@
+# ── 版式配置：24列黑色版 ──────────────────────────────────────
+# 一种版式对应一个 yaml，可被任意书籍引用
+# 排版时通过 --layout 24_black 指定
+
+canvas_id:          24_black
+canvas_width:       2480
+canvas_height:      1860
+
+margins_top:        200
+margins_bottom:     50
+margins_left:       50
+margins_right:      50
+
+col_num:            24
+leaf_center_width:  120
+outline_width:      10
+outline_vmargin:    5
+
+# ── 书目排版参数（每次排版可按需覆盖，或在此统一设置）──────────
+
+row_num:            30           # 每列字数
+
+# 版心标题（排版时若无则用文本文件名）
+spine_title:        ""           # 留空则自动用文本文件名（去掉.txt）
+title_postfix:      ""           # 卷号后缀，X自动替换，如"卷X"
+
+if_tpcenter:        1
+title_font_size:    80
+title_font_color:   black
+title_y:            1200
+title_ydis:         1.2
+title_directory:    1
+
+pager_font_size:    35
+pager_font_color:   black
+pager_y:            500
+
+# ── 字体 ──────────────────────────────────────────────────────
+font1:    qiji-combo.ttf
+font2:    HanaMinA.ttf
+font3:    HanaMinB.ttf
+font4:    ""
+font5:    ""
+
+font1_rotate: 0
+font2_rotate: 0
+font3_rotate: 0
+font4_rotate: 0
+font5_rotate: 0
+
+text_fonts_array:    "123"
+comment_fonts_array: "23"
+
+text_font1_size:    60
+text_font2_size:    42
+text_font3_size:    42
+text_font_color:    black
+
+comment_font1_size: 30
+comment_font2_size: 30
+comment_font3_size: 30
+comment_font_color: black
+
+# ── 标点规则 ───────────────────────────────────────────────────
+exp_replace_comma:  ""
+exp_replace_number: "1一|2二|3三|4四|5五|6六|7七|8八|9九|0〇"
+exp_delete_comma:   "．|　"
+if_nocomma:         0
+exp_nocomma:        "、|，|。|：|；|！|？|〔|〕|「|」|『|』"
+if_onlyperiod:      1
+exp_onlyperiod:     "、|，|。|：|；|！|？|〔|〕|「|」|『|』"
+onlyperiod_color:   red
+
+text_comma_nop:       "、|，|。|：|；|！|？"
+text_comma_nop_size:  1.2
+text_comma_nop_x:     0.5
+text_comma_nop_y:     0.2
+text_comma_90:        "「」『』〔〕…"
+text_comma_90_size:   0.8
+text_comma_90_x:      0.35
+text_comma_90_y:      0.6
+
+comment_comma_nop:      "、|，|。|：|；|！|？"
+comment_comma_nop_size: 0.7
+comment_comma_nop_x:    0.8
+comment_comma_nop_y:    0.1
+comment_comma_90:       "「」『』〔〕…"
+comment_comma_90_size:  0.8
+comment_comma_90_x:     0.15
+comment_comma_90_y:     0.5
+
+if_book_vline:    1
+book_line_width:  1
+book_line_color:  black

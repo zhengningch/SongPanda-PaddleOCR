@@ -1,0 +1,87 @@
+# ── 版式配置：tu_2 ──
+canvas_id:                tu_2
+canvas_width:             1200
+canvas_height:            896
+
+margins_top:              37
+margins_bottom:           31
+margins_left:             37
+margins_right:            626
+
+col_num:                  10
+leaf_center_width:        60
+outline_width:            10
+outline_vmargin:          5
+
+row_num:                  19           # 每列字数
+
+spine_title:          ""
+title_postfix:        ""
+
+if_tpcenter:              1
+title_font_size:          80
+title_font_color:     "black"
+title_y:                  1200
+title_ydis:               1.2
+
+pager_font_size:          35
+pager_font_color:     "black"
+pager_y:                  500
+
+# ── 字体 ──
+font1:                "qiji-combo.ttf"
+font2:                "HanaMinA.ttf"
+font3:                "HanaMinB.ttf"
+
+text_fonts_array:     "123"
+comment_fonts_array:  "23"
+
+text_font1_size:          38
+text_font2_size:          27
+text_font3_size:          27
+text_font_color:      "black"
+
+comment_font1_size:       19
+comment_font2_size:       19
+comment_font3_size:       19
+comment_font_color:   "black"
+topcmt_font_size:         20
+topcmt_color:         "red"
+
+# ── 标点规则 ──
+exp_replace_comma:    ""
+exp_replace_number:   "1一|2二|3三|4四|5五|6六|7七|8八|9九|0〇"
+exp_delete_comma:     "．|　"
+if_nocomma:               0
+if_onlyperiod:            0            # 关闭：所有标点按原符号本体渲染，不统一转红色圈点
+exp_onlyperiod:       "，|。|：|；|！|？|〔|〕|「|」|『|』"
+onlyperiod_color:     "red"
+text_comma_nop:       "、|，|。|：|；|！|？"
+text_comma_nop_size:      1.2
+text_comma_nop_x:         0.5
+text_comma_nop_y:         0.2
+text_comma_90:        "「」『』〔〕…"
+text_comma_90_size:       0.8
+text_comma_90_x:          0.35
+text_comma_90_y:          0.6
+comment_comma_nop:    "、|，|。|：|；|！|？"
+comment_comma_nop_size:   0.7
+comment_comma_nop_x:      0.8
+comment_comma_nop_y:      0.1
+comment_comma_90:     "「」『』〔〕…"
+comment_comma_90_size:    0.8
+comment_comma_90_x:       0.15
+comment_comma_90_y:       0.5
+
+# ── 书名竖线 ──
+if_book_vline:            1
+book_line_width:          1
+book_line_color:      "black"
+
+# ── 列框标注（由图片标注工具生成）──
+col_positions:            523,467,412,355,300,247,193,139,82,36
+col_widths:               52,54,55,57,54,52,53,53,55,45
+
+# ── 图片区域标注（由图片标注工具生成）──
+# 格式：x,y,w,h;x,y,w,h  （原图像素坐标，可多个区域，分号分隔）
+image_zones:              632,34,535,832
