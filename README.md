@@ -9,10 +9,10 @@
 <p align="center"><em>把古籍 OCR 从「纯文本转录」推进到「文档字段解构」</em></p>
 
 <p align="center">
-  <a href="https://zhengningch.github.io/SongPanda-PaddleOCR/">🌐 项目主页</a> ·
+  <a href="https://zhengningch.github.io/SongPanda-PaddleOCR/">🌐 校对&排版 Demo</a> ·
   <a href="https://aistudio.baidu.com/datasetdetail/guji/songpanda-bench">📦 评测数据集</a> ·
   <a href="https://huggingface.co/ningzhuo/SongPanda2.3">🤗 模型权重</a> ·
-  <a href="https://www.modelscope.cn/studios/zhuoning/paddleocr-vl-cpu-demo">🎬 在线 Demo</a>
+  <a href="https://www.modelscope.cn/studios/zhuoning/paddleocr-vl-cpu-demo">🎬 模型在线 Demo</a>
 </p>
 
 ---
@@ -112,7 +112,7 @@ github/
 
 | 资源 | 地址 |
 |---|---|
-| 项目主页 | https://zhengningch.github.io/SongPanda-PaddleOCR/ |
+| 校对&排版 Demo | https://zhengningch.github.io/SongPanda-PaddleOCR/ |
 | 评测数据集 | https://aistudio.baidu.com/datasetdetail/guji/songpanda-bench |
 | 模型权重 | https://huggingface.co/ningzhuo/SongPanda2.3 |
 | 在线 Demo | https://www.modelscope.cn/studios/zhuoning/paddleocr-vl-cpu-demo |
